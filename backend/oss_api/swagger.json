@@ -1,0 +1,391 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "This is an API of the Outline Server that allows a Strapi web app to receive/modify/remove the Outline VPN Keys on Outline Server containers which are handled by [Outline Server API](https://github.com/Jigsaw-Code/outline-server).",
+    "version": "1.0.0",
+    "title": "Outline Server Management API",
+    "termsOfService": "https://hypervpn.com/terms",
+    "contact": {
+      "email": "support@hypervpn.com"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "host": "localhost:8080",
+  "basePath": "/api",
+  "tags": [
+    {
+      "name": "keys",
+      "description": "Outline VPN Keys",
+      "externalDocs": {
+        "description": "Find out more about Access Keys",
+        "url": "https://support.getoutline.org/s/article/accesskey?language=en_US#:~:text=An%20access%20key%2C%20often%20referred,can%20decrypt%20your%20internet%20traffic."
+      }
+    },
+    {
+      "name": "manualServers",
+      "description": "Outline Manual Servers"
+    }
+  ],
+  "schemes": [
+    "https",
+    "http"
+  ],
+  "paths": {
+    "/keys/all": {
+      "get": {
+        "tags": [
+          "keys"
+        ],
+        "summary": "Get all the keys out there",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Key"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/keys/getById/{key}": {
+      "get": {
+        "tags": [
+          "keys"
+        ],
+        "summary": "Get information about an access key given its key id",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "description": "value of VPN key to fetch info based on",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/Key"
+            }
+          },
+          "500": {
+            "description": "Internal Error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/keys/new": {
+      "post": {
+        "tags": [
+          "keys"
+        ],
+        "summary": "Get a new key based on the plan and traffic needs and stuff.",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Given the data-limit for the new Access Key, create one and set its data-limit to the value of `dataLimit` parameter in body. ",
+            "required": true,
+            "schema": {
+              "properties": {
+                "dataLimit": {
+                  "type": "string",
+                  "format": "int64",
+                  "description": "Data Limit in Bytes"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/Key"
+            }
+          },
+          "400": {
+            "description": "bad user input",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/keys/delete/{key}": {
+      "delete": {
+        "tags": [
+          "keys"
+        ],
+        "summary": "Delete a key given its key value",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "description": "value of VPN key to remove",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "key has been deleted"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/keys/updateDataLimit/{key}": {
+      "put": {
+        "tags": [
+          "keys"
+        ],
+        "summary": "Updates the data-limit of an Access Key",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "description": "value of VPN key to modify",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Given the data-limit for an existing Access Key, update/set its data-limit to the value of `dataLimit` parameter in body.",
+            "required": true,
+            "schema": {
+              "properties": {
+                "dataLimit": {
+                  "type": "string",
+                  "format": "int64",
+                  "description": "Data Limit in Bytes"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "data-limit for the Access Key has been updated"
+          },
+          "400": {
+            "description": "The data-limit was not either passed, or passed in a valid format.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/manualServers/all": {
+      "get": {
+        "tags": [
+          "manualServers"
+        ],
+        "summary": "Get all the manual servers in the database",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Key"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/manualServers/add": {
+      "post": {
+        "tags": [
+          "manualServers"
+        ],
+        "summary": "Add a list consits some server(s) to be added to the API.",
+        "description": "",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Given a list of servers, add all these servers to the redis database and recognize them in the    future.",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "apiUrl": {
+                    "type": "string"
+                  },
+                  "certSha256": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "all the servers were added, successfully."
+          },
+          "400": {
+            "description": "Bad input format",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "name": "api_key",
+      "in": "header"
+    }
+  },
+  "definitions": {
+    "Key": {
+      "type": "object",
+      "properties": {
+        "rowId": {
+          "type": "integer",
+          "description": "Row id of the key. This will be given to the api later on to fetch more information."
+        },
+        "keyValue": {
+          "type": "string",
+          "description": "VPN Key Value | CONFIDENTIAL SENSITIVE DATA"
+        },
+        "dataLimit": {
+          "type": "string",
+          "format": "int64",
+          "description": "Data-limit value in Bytes"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "Error": {
+      "type": "object",
+      "properties": {
+        "httpStatusCode": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "msg": {
+          "type": "string"
+        },
+        "userError": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

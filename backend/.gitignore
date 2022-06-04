@@ -1,0 +1,6 @@
+./osm-api/.env
+./osm-api/.idea/misc.xml
+
+*.log
+
+*/.idea
