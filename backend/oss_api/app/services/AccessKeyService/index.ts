@@ -7,13 +7,13 @@ import GetAllFromSource from "./GetAllFromSource";
 import UpdateDataLimit from "./UpdateDataLimit";
 
 const AccessKeyService = {
-  GetAllFromDatabase,
-  FindById,
   CreateNewKey,
   Generate,
-  DeleteKey,
   GetAllFromSource,
-  UpdateDataLimit
+  GetAllFromDatabase,
+  FindById,
+  UpdateDataLimit,
+  DeleteKey
 }
 
 export default AccessKeyService;

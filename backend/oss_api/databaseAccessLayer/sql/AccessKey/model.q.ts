@@ -1,6 +1,7 @@
-import {AccessKeyId, DataLimit} from "../../../app/interfaces/IAccessKey";
+import IDataLimit from "../../../app/interfaces/AccessKey/IDataLimit";
 import {IAccessKeyEntity} from "../IAccessKeyEntity";
 import {QueryTypes} from "sequelize";
+import IAccessKeyId from "../../../app/interfaces/AccessKey/IAccessKeyId";
 
 export default function getQueries(database, tableName) {
   
@@ -32,7 +33,7 @@ export default function getQueries(database, tableName) {
     return (result && result.length > 0) ? result[0] as IAccessKeyEntity : null;
   }
   
-  async function updateByRowId(rowId, name: string, accessUrl: string, dataLimit: DataLimit) {
+  async function updateByRowId(rowId, name: string, accessUrl: string, dataLimit: IDataLimit) {
     const sqlUpdateQuery = `UPDATE ${tableName} SET name = :name, accessUrl = :accessUrl, dataLimit = :dataLimit WHERE id = :rowId`;
     
     return database.query(
@@ -48,7 +49,7 @@ export default function getQueries(database, tableName) {
     );
   }
   
-  async function insertNewAccessKey(keyId: AccessKeyId, name, accessUrl, dataLimit, serverRowId) {
+  async function insertNewAccessKey(keyId: IAccessKeyId, name, accessUrl, dataLimit, serverRowId) {
     const sqlInsertQuery = `INSERT INTO ${tableName}
             (keyId, name, accessUrl, dataLimit, serverRowId, createdAt)
             VALUES (:keyId, :name, :accessUrl, :dataLimit, :serverRowId, :createdAt)`;

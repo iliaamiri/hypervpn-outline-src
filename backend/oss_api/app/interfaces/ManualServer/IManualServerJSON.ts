@@ -1,9 +1,9 @@
-import {DataLimit} from "../IAccessKey";
+import IDataLimit from "../AccessKey/IDataLimit";
 
 export default interface IManualServerJSON {
   name: string;
   shadowboxVersion: string;
-  defaultDataLimit: DataLimit;
+  defaultDataLimit: IDataLimit;
   metricsEnabled: boolean;
   hostnameForAccessKeys: string;
   managementApiUrl: string;

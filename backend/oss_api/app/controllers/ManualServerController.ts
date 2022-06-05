@@ -2,6 +2,10 @@ import {Request, Response} from "express";
 
 import ManualServerService from "../services/ManualServerService";
 import ManualServerExceptions from "../../core/exceptions/ManualServerExceptions";
+import exceptionHandler from "../../core/ExceptionHandler";
+import GeneralExceptions from "../../core/exceptions/GeneralExceptions";
+import ManualServerValidator from "../services/ManualServerValidator";
+import IManualServerDto from "../models/IManualServerDto";
 
 const ManualServer = {
   async addServers(req: Request, res: Response) {
@@ -42,14 +46,80 @@ const ManualServer = {
     });
   },
   
-  async getAll(req, res) {
+  async getAll(req: Request, res: Response) {
     const allServers = await ManualServerService.GetAll();
     
+    const allServersDto: IManualServerDto[] = [];
+    for (let server of allServers) {
+      allServersDto.push(server.toJSON());
+    }
+    console.log(allServersDto)
     res.json({
       status: true,
-      allServers: allServers
+      allServers: allServersDto
     });
   },
+  
+  async updateServer(req: Request, res: Response) {
+    let {serverRowId} = req.params;
+    let server = req.body;
+    if (serverRowId === undefined || isNaN(parseInt(serverRowId))) {
+      return await exceptionHandler(GeneralExceptions.BAD_INPUT, req, res, () => {
+        return { faultyInput: "serverRowId"};
+      });
+    }
+    let serverRowIdInt = parseInt(serverRowId);
+  
+    const validationResult = await ManualServerValidator(server);
+    
+    console.log(validationResult);
+    
+    let isModelValid = validationResult.IsValid;
+    if (!isModelValid) {
+      let allErrors = validationResult.Errors;
+      return await exceptionHandler(GeneralExceptions.BAD_INPUT, req, res, () => {
+        return { validationResultErrors: allErrors};
+      });
+    }
+    
+    const foundServer = await ManualServerService.FindById(serverRowIdInt);
+    if (!foundServer) {
+      return await exceptionHandler(ManualServerExceptions.COULD_NOT_CONNECT, req, res);
+    }
+    
+    await ManualServerService.UpdateManualServer(foundServer, server);
+    
+    res.status(200).json({
+      status: true
+    });
+  },
+  
+  async forgetServer(req: Request, res: Response) {
+    let {serverRowId} = req.params;
+    if (serverRowId === undefined || isNaN(parseInt(serverRowId))) {
+      return await exceptionHandler(GeneralExceptions.BAD_INPUT, req, res, () => {
+        return { faultyInput: "serverRowId"};
+      });
+    }
+    let serverRowIdInt = parseInt(serverRowId);
+  
+    const foundServer = await ManualServerService.FindById(serverRowIdInt);
+    if (!foundServer) {
+      return await exceptionHandler(ManualServerExceptions.COULD_NOT_CONNECT, req, res);
+    }
+  
+    const success = await ManualServerService.ForgetServer(foundServer);
+    
+    if (!success) {
+      return await exceptionHandler(ManualServerExceptions.COULD_NOT_DELETE, req, res, () => {
+        return { faultyInput: "serverRowId"};
+      });
+    }
+  
+    res.status(200).json({
+      status: true
+    });
+  }
 }
 
 export default ManualServer;

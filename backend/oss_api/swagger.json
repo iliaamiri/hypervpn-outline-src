@@ -122,9 +122,7 @@
             "schema": {
               "properties": {
                 "dataLimit": {
-                  "type": "string",
-                  "format": "int64",
-                  "description": "Data Limit in Bytes"
+                  "$ref": "#/definitions/DataLimit"
                 }
               }
             }
@@ -214,9 +212,7 @@
             "schema": {
               "properties": {
                 "dataLimit": {
-                  "type": "string",
-                  "format": "int64",
-                  "description": "Data Limit in Bytes"
+                  "$ref": "#/definitions/DataLimit"
                 }
               }
             }
@@ -263,7 +259,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/Key"
+                "$ref": "#/definitions/ManualServer"
               }
             }
           },
@@ -304,6 +300,9 @@
                   },
                   "certSha256": {
                     "type": "string"
+                  },
+                  "bandwidthThreshold": {
+                    "$ref": "#/definitions/BandwidthThreshold"
                   }
                 }
               }
@@ -316,6 +315,119 @@
           },
           "400": {
             "description": "Bad input format",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/manualServers/update/{manualServerRowId}":  {
+      "put": {
+        "tags": [
+          "manualServers"
+        ],
+        "summary": "Updates whatever is possible to update on a manual server.=",
+        "description": "This function might have to reach the servers via network requests and ask the servers to change their info.",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "manualServerRowId",
+            "in": "path",
+            "description": "The primary key of the manual server.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Given enough parameters that matches the server properties, update/set that new parameters through network requesting the shadowbox and/or just a simple sql query.",
+            "required": true,
+            "schema": {
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Name of the server"
+                },
+                "defaultDataLimit": {
+                  "$ref": "#/definitions/DataLimit"
+                },
+                "isMetricsEnabled": {
+                  "type": "boolean",
+                  "description": "Updates whether the metrics are enabled or not. This property will most-likely communicate with the shadowbox."
+                },
+                "host": {
+                  "type": "string",
+                  "description": "Updates the hostname for access keys."
+                },
+                "managementApiUrl": {
+                  "type": "string",
+                  "description": "Updates the management api url."
+                },
+                "bandwidthThreshold": {
+                  "$ref": "#/definitions/BandwidthThreshold"
+                },
+                "portForNewAccessKeys": {
+                  "type": "integer",
+                  "description": "Updates port for new access keys."
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server was updated successfully."
+          },
+          "400": {
+            "description": "Bad user input.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/manualServers/forget/{manualServerRowId}": {
+      "delete": {
+        "tags": [
+          "manualServers"
+        ],
+        "summary": "Forgets a manual server",
+        "description": "This function will remove the manual server info, but won't affect its access keys.",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Server was forgotten."
+          },
+          "400": {
+            "description": "Bad user input.",
             "schema": {
               "$ref": "#/definitions/Error"
             }
@@ -355,13 +467,59 @@
           "description": "VPN Key Value | CONFIDENTIAL SENSITIVE DATA"
         },
         "dataLimit": {
-          "type": "string",
-          "format": "int64",
-          "description": "Data-limit value in Bytes"
+          "$ref": "#/definitions/DataLimit"
         },
         "createdAt": {
           "type": "string",
           "format": "date-time"
+        }
+      }
+    },
+    "DataLimit": {
+      "type": "object",
+      "properties": {
+        "bytes": {
+          "type": "string",
+          "format": "int64",
+          "description": "Data-limit value in Bytes"
+        }
+      }
+    },
+    "BandwidthThreshold": {
+      "type": "object",
+      "properties": {
+        "megaBytes": {
+          "type": "string",
+          "format": "int64",
+          "description": "Bandwidth-Threshold value in MegaBytes"
+        }
+      }
+    },
+    "ManualServer": {
+      "type": "object",
+      "properties": {
+        "rowId": {
+          "type": "integer",
+          "description": "Row id of the key. This will be given to the api later on to fetch more information."
+        },
+        "manualServerId": {
+          "type": "string",
+          "description": "Manual server id."
+        },
+        "host": {
+          "type": "string",
+          "description": "Host"
+        },
+        "managementApiUrl": {
+          "type": "string",
+          "description": "Management Api Url"
+        },
+        "isMetricsEnabled": {
+          "type": "boolean",
+          "description": "Status of metrics enabled/disabled"
+        },
+        "bandwidthThreshold": {
+          "$ref": "#/definitions/BandwidthThreshold"
         }
       }
     },

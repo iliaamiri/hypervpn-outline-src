@@ -8,6 +8,8 @@ import AccessKeyExceptions from "../../core/exceptions/AccessKeyExceptions";
 import ShadowboxExceptions from "../../core/exceptions/ShadowboxException";
 import ManualServerExceptions from "../../core/exceptions/ManualServerExceptions";
 import IException from "../../core/IException";
+import ManualServerService from "../services/ManualServerService";
+import {IManualServer} from "../interfaces/ManualServer/IManualServer";
 
 const AccessKeyController = {
   async getAll(req: Request, res: Response) {
@@ -77,9 +79,14 @@ const AccessKeyController = {
     }
 
     dataLimit = { bytes: parseInt(dataLimit)};
+  
+    // const foundServer: IManualServer = await ManualServerService.FindById(foundAccessKey.serverRowId);
+  
+    foundAccessKey.server = await ManualServerService.FindById(foundAccessKey.serverRowId);
     
     try {
       await AccessKeyService.UpdateDataLimit(foundAccessKey, dataLimit);
+      res.sendStatus(200);
     } catch (err) {
       throw err;
     }

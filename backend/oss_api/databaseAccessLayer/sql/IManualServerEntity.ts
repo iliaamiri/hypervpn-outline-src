@@ -4,6 +4,7 @@ export interface IManualServerEntity {
   name: string;
   shadowboxVersion: string;
   defaultDataLimit;
+  bandwidthThreshold: number;
   metricsEnabled;
   hostnameForAccessKeys: string;
   managementApiUrl: string;

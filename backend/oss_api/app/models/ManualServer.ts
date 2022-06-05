@@ -1,15 +1,18 @@
 import {
   IManualServer,
-  ManualServerConfig,
-  IBandwidthThreshold
+  
 } from '../interfaces/ManualServer/IManualServer';
+import IBandwidthThreshold from "../interfaces/ManualServer/IBandwidthThreshold";
 import {ShadowboxServer} from "./Shadowbox";
 import {hexToString} from "../../core/utils/hexEncoding";
+
+import IManualServerDto from "./IManualServerDto";
 
 import database from '../../databaseAccessLayer';
 
 // Exceptions
 import ManualServerExceptions from "../../core/exceptions/ManualServerExceptions";
+import IManualServerConfig from "../interfaces/ManualServer/IManualServerConfig";
 
 class ManualServer extends ShadowboxServer implements IManualServer {
   private _rowId: number;
@@ -33,7 +36,7 @@ class ManualServer extends ShadowboxServer implements IManualServer {
   
   constructor(
     readonly manualServerId: string,
-    private manualServerConfig: ManualServerConfig,
+    private manualServerConfig: IManualServerConfig,
     private forgetCallback: Function,
     bandwidth?: IBandwidthThreshold
   ) {
@@ -54,12 +57,12 @@ class ManualServer extends ShadowboxServer implements IManualServer {
     // then encoded as base64.
     try {
       const parsed = new URL(manualServerConfig.apiUrl);
-      const fingerprint = btoa(hexToString(manualServerConfig.certSha256));
+      const fingerprint = Buffer.from(hexToString(manualServerConfig.certSha256)).toString('base64');
       // trustCertificate(parsed.host, fingerprint);
       this.host = parsed.host;
       this.fingerprint = fingerprint;
       
-      // This is very shallow, cause it doesn't use the `trustCertificate` function.
+      // This is very shallow, because it doesn't use the `trustCertificate` function.
       this.isCertificateTrusted = true;
     } catch (e) {
       // Error trusting certificate, may be due to bad user input.
@@ -77,19 +80,33 @@ class ManualServer extends ShadowboxServer implements IManualServer {
     this.forgetCallback();
   }
   
+  public toJSON(): IManualServerDto {
+    return {
+      name: this.getName(),
+      portForNewAccessKeys: this.getPortForNewAccessKeys(),
+      rowId: this.rowId,
+      manualServerId: this.id,
+      managementApiUrl: this.manualServerConfig.apiUrl,
+      host: this.host,
+      bandwidthThreshold: this.bandwidthThreshold,
+      defaultDataLimit: this.getDefaultDataLimit(),
+      isMetricsEnabled: this.getMetricsEnabled()
+    }
+  }
+  
   // *NOTE* This method pre-assumes that the server is healthy.
   public async saveToDatabase() {
     const serverConfig = await this.getServerConfig();
-
+    
     if (this.rowId === undefined) {
       // insert
-      const [result, metadata] = await database.manualServerEntity.insertManualServer(serverConfig, this.manualServerConfig);
+      const [, metadata] = await database.manualServerEntity.insertManualServer(serverConfig, this.manualServerConfig);
       if (metadata && metadata['lastID']) {
         this.rowId = metadata['lastID'];
       }
     } else {
       // update
-      await database.manualServerEntity.updateManualServerByRowId(this.rowId, serverConfig, this.manualServerConfig);
+      await database.manualServerEntity.updateManualServerByRowId(this.rowId, serverConfig, this.manualServerConfig, this.bandwidthThreshold);
     }
   }
 }

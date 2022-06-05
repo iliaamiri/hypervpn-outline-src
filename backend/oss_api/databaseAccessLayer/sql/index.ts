@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS manual_server (
   name CHAR(50),
 	shadowboxVersion CHAR(50),
 	defaultDataLimit INTEGER,
+	bandwidthThreshold INTEGER,
   metricsEnabled INTEGER,
   hostnameForAccessKeys CHAR(350),
   managementApiUrl CHAR(550),

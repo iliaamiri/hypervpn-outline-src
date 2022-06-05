@@ -29,7 +29,7 @@ export default async function CreateNewKey(instance : AccessKey) : Promise<Acces
   
   instance.createdAt = Date.now();
   
-  instance.saveToDb();
+  await instance.saveToDb();
   
   return instance;
 }

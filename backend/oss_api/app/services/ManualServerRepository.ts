@@ -1,4 +1,4 @@
-import {IManualServer, ManualServerConfig} from "../interfaces/ManualServer/IManualServer";
+import {IManualServer} from "../interfaces/ManualServer/IManualServer";
 
 // Models
 import ManualServer from "../models/ManualServer";
@@ -7,6 +7,8 @@ import ManualServer from "../models/ManualServer";
 import database from '../../databaseAccessLayer';
 import ManualServerExceptions from "../../core/exceptions/ManualServerExceptions";
 import AccessKeyChiefService from "./AccessKeyChiefService";
+import IManualServerConfig from "../interfaces/ManualServer/IManualServerConfig";
+import IBandwidthThreshold from "../interfaces/ManualServer/IBandwidthThreshold";
 
 class ManualServers {
   // A collection of all the servers.
@@ -65,8 +67,11 @@ class ManualServers {
     return instance;
   }
   
-  listServers(): Promise<IManualServer[]> {
-    return Promise.resolve(this.servers);
+  async listServers(): Promise<IManualServer[]> {
+    // for (let index in this.servers) {
+    //   await this.servers[index].getServerConfig();
+    // }
+    return this.servers;
   }
   
   private async loadServers(): Promise<void> {
@@ -107,7 +112,7 @@ class ManualServers {
     return newBadServers;
   }
   
-  public async addServer(config: ManualServerConfig): Promise<IManualServer> {
+  public async addServer(config: IManualServerConfig, bandwidthThreshold?: IBandwidthThreshold): Promise<IManualServer> {
     // Instantiate a new Server
     const server = this.instantiateServer(config);
   
@@ -117,22 +122,28 @@ class ManualServers {
       throw new Error(ManualServerExceptions.SERVER_IS_NOT_HEALTHY.errName);
     }
     
+    if (bandwidthThreshold) {
+      server.bandwidthThreshold = bandwidthThreshold;
+    }
+  
+    AccessKeyChiefService.SyncAccessKeysBetweenShadowboxAndDatabase(server);
+    
     // If server was healthy, push it to the memory.
     this.servers.push(server);
 
     return (server);
   }
   
-  public findServerFromRepo(config: ManualServerConfig): IManualServer | undefined {
+  public findServerFromRepo(config: IManualServerConfig): IManualServer | undefined {
     return this.servers.find((server) => server.getManagementApiUrl() === config.apiUrl);
   }
   
-  private static async findServerFromDatabase(config: ManualServerConfig) {
+  private static async findServerFromDatabase(config: IManualServerConfig) {
     const foundServer = await database.manualServerEntity.findByManagementApiUrl(config.apiUrl);
     return (foundServer) ? foundServer : null;
   }
   
-  public async fetchServer(config: ManualServerConfig): Promise<IManualServer | null> {
+  public async fetchServer(config: IManualServerConfig, bandwidthThreshold?: IBandwidthThreshold): Promise<IManualServer | null> {
     const foundServerFromRepo = this.findServerFromRepo(config);
     if (foundServerFromRepo) {
       console.log("FOUND SERVER FROM REPO");
@@ -145,13 +156,13 @@ class ManualServers {
       return await this.addServer({
         apiUrl: foundServerFromDatabase.managementApiUrl,
         certSha256: foundServerFromDatabase.certSha256
-      });
+      }, bandwidthThreshold);
     }
     
     return null;
   }
   
-  private instantiateServer(config: ManualServerConfig) {
+  private instantiateServer(config: IManualServerConfig) {
     const server = new ManualServer(`manual:${config.apiUrl}`, config, () => {
       this.forgetServer(server);
     });

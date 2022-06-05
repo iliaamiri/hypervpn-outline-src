@@ -10,8 +10,8 @@ const ManualServerExceptions: {[key: string]: IException} = {
   },
   COULD_NOT_CONNECT: {
     errName: "COULD_NOT_CONNECT",
-    code: "501",
-    httpCustomStatusCode: 501,
+    code: "503",
+    httpCustomStatusCode: 503,
     userError: "Could not connect to the server.",
     detail: "Could not connect to the serve. Unknown error."
   },
@@ -24,10 +24,25 @@ const ManualServerExceptions: {[key: string]: IException} = {
   },
   SERVER_IS_NOT_HEALTHY: {
     errName: "SERVER_IS_NOT_HEALTHY",
-    code: "505",
-    httpCustomStatusCode: 505,
+    code: "523",
+    httpCustomStatusCode: 523,
     userError: "This server is unreachable",
     detail: "The server is unhealthy. Could not reach this server after several attempts."
+  },
+  METRICS_IS_DISABLED: {
+    errName: "METRICS_IS_DISABLED",
+    code: "503",
+    httpCustomStatusCode: 503,
+    userError: "The server's metrics is disabled. This means you cannot set data limits for this key as long as the" +
+      "server metrics are not enabled.",
+    detail: "In order for setting a data limit on a key on this server, you need to enable the metrics first."
+  },
+  COULD_NOT_DELETE: {
+    errName: "COULD_NOT_DELETE",
+    code: "500",
+    httpCustomStatusCode: 500,
+    userError: "The server could not be deleted. Please contact technical support.",
+    detail: "Possible reason: rowId couldn't be found"
   }
 };
 

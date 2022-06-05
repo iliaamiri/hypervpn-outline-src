@@ -1,19 +1,18 @@
 import config from '../../config/app.config';
 import fetch from "node-fetch";
 import * as semver from 'semver';
+import compareVersions from 'compare-versions';
 
 import ShadowboxExceptions from "../../core/exceptions/ShadowboxException";
 
-import {IServer, ServerConfigJson} from '../interfaces/IServer';
+import {IServer} from '../interfaces/Server/IServer';
 
-import {
-  makeAccessKeyModel,
-  DataLimit,
-  AccessKeyJson,
-  AccessKeyId,
-  BytesByAccessKey,
-  IAccessKeyDto
-} from '../interfaces/IAccessKey';
+import IBytesByAccessKey from '../interfaces/AccessKey/IBytesByAccessKey';
+import IDataLimit from "../interfaces/AccessKey/IDataLimit";
+import IAccessKeyJSON from "../interfaces/AccessKey/IAccessKeyJSON";
+import IAccessKeyDto from "./IAccessKeyDto";
+import IAccessKeyId from "../interfaces/AccessKey/IAccessKeyId";
+import ServerConfigJSON from "../interfaces/Server/ServerConfigJSON";
 
 if (config.appDebug) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -28,10 +27,14 @@ interface DataUsageByAccessKeyJson {
   bytesTransferredByUserId: {[accessKeyId: string]: number};
 }
 
+// Converts the access key JSON from the API to its model.
+export function makeAccessKeyModel(apiAccessKey: IAccessKeyJSON): IAccessKeyDto {
+  return apiAccessKey as IAccessKeyDto;
+}
 
 export class ShadowboxServer implements IServer {
   managementApiUrl: string;
-  private serverConfig: ServerConfigJson;
+  private serverConfig: ServerConfigJSON;
 
   getName(): string {
     return this.serverConfig?.name;
@@ -47,15 +50,13 @@ export class ShadowboxServer implements IServer {
       this.serverConfig.name = name;
     });
   }
-  
-  readonly shadowboxVersion: string;
 
 
   constructor(readonly id: string) {}
 
   listAccessKeys(): Promise<IAccessKeyDto[]> {
     console.info('Listing access keys');
-    return this.apiRequest<{accessKeys: AccessKeyJson[]}>('access-keys').then((response) => {
+    return this.apiRequest<{accessKeys: IAccessKeyJSON[]}>('access-keys').then((response) => {
       return response.accessKeys.map(makeAccessKeyModel);
     });
   }
@@ -63,28 +64,29 @@ export class ShadowboxServer implements IServer {
   async addAccessKey(): Promise<IAccessKeyDto> {
     console.info('Adding access key');
     return makeAccessKeyModel(
-      await this.apiRequest<AccessKeyJson>('access-keys', {method: 'POST'})
+      await this.apiRequest<IAccessKeyJSON>('access-keys', {method: 'POST'})
     );
   }
 
-  renameAccessKey(accessKeyId: AccessKeyId, name: string): Promise<void> {
+  renameAccessKey(accessKeyId: IAccessKeyId, name: string): Promise<void> {
     console.info('Renaming access key');
     const body = new FormData();
     body.append('name', name);
     return this.apiRequest<void>('access-keys/' + accessKeyId + '/name', {method: 'PUT', body});
   }
 
-  removeAccessKey(accessKeyId: AccessKeyId): Promise<void> {
+  removeAccessKey(accessKeyId: IAccessKeyId): Promise<void> {
     console.info('Removing access key');
     return this.apiRequest<void>('access-keys/' + accessKeyId, {method: 'DELETE'});
   }
 
-  async setDefaultDataLimit(limit: DataLimit): Promise<void> {
+  async setDefaultDataLimit(limit: IDataLimit): Promise<void> {
     console.info(`Setting server default data limit: ${JSON.stringify(limit)}`);
+    limit.bytes = parseInt(String(limit.bytes));
     const requestOptions = {
       method: 'PUT',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({limit}),
+      body: JSON.stringify({limit: limit}),
     };
     await this.apiRequest<void>(this.getDefaultDataLimitPath(), requestOptions);
     this.serverConfig.accessKeyDataLimit = limit;
@@ -96,20 +98,21 @@ export class ShadowboxServer implements IServer {
     delete this.serverConfig.accessKeyDataLimit;
   }
 
-  getDefaultDataLimit(): DataLimit | undefined {
+  getDefaultDataLimit(): IDataLimit | undefined {
     return (this.serverConfig) ? this.serverConfig.accessKeyDataLimit : undefined;
   }
 
   private getDefaultDataLimitPath(): string {
     const version = this.getVersion();
-    if (semver.gte(version, '1.4.0')) {
+    const compVersions = compareVersions(version, '1.4.0');
+    if (compVersions === 1 || compVersions === 0) {
       // Data limits became a permanent feature in shadowbox v1.4.0.
       return 'server/access-key-data-limit';
     }
     return 'experimental/access-key-data-limit';
   }
 
-  async setAccessKeyDataLimit(keyId: AccessKeyId, limit: DataLimit): Promise<void> {
+  async setAccessKeyDataLimit(keyId: IAccessKeyId, limit: IDataLimit): Promise<void> {
     console.info(`Setting data limit of ${limit.bytes} bytes for access key ${keyId}`);
     const requestOptions = {
       method: 'PUT',
@@ -119,14 +122,14 @@ export class ShadowboxServer implements IServer {
     await this.apiRequest<void>(`access-keys/${keyId}/data-limit`, requestOptions);
   }
 
-  async removeAccessKeyDataLimit(keyId: AccessKeyId): Promise<void> {
+  async removeAccessKeyDataLimit(keyId: IAccessKeyId): Promise<void> {
     console.info(`Removing data limit from access key ${keyId}`);
     await this.apiRequest<void>(`access-keys/${keyId}/data-limit`, {method: 'DELETE'});
   }
 
-  async getDataUsage(): Promise<BytesByAccessKey> {
+  async getDataUsage(): Promise<IBytesByAccessKey> {
     const jsonResponse = await this.apiRequest<DataUsageByAccessKeyJson>('metrics/transfer');
-    const usageMap = new Map<AccessKeyId, number>();
+    const usageMap = new Map<IAccessKeyId, number>();
     for (const [accessKeyId, bytes] of Object.entries(jsonResponse.bytesTransferredByUserId)) {
       usageMap.set(accessKeyId, bytes ?? 0);
     }
@@ -138,7 +141,7 @@ export class ShadowboxServer implements IServer {
   }
 
   getMetricsEnabled(): boolean {
-    return this.serverConfig.metricsEnabled;
+    return this.serverConfig?.metricsEnabled || false;
   }
 
   setMetricsEnabled(metricsEnabled: boolean): Promise<void> {
@@ -211,9 +214,11 @@ export class ShadowboxServer implements IServer {
     });
   }
 
-  async getServerConfig(): Promise<ServerConfigJson> {
+  async getServerConfig(): Promise<ServerConfigJSON> {
     console.info('Retrieving server configuration');
-    return await this.apiRequest<ServerConfigJson>('server');
+    const serverConfigJSON = await this.apiRequest<ServerConfigJSON>('server');
+    this.serverConfig = serverConfigJSON;
+    return serverConfigJSON;
   }
 
   protected setManagementApiUrl(apiAddress: string): void {
@@ -241,7 +246,7 @@ export class ShadowboxServer implements IServer {
         .then(
           (response) => {
             if (!response.ok) {
-              // console.log(response);
+              console.log(response, "OPTIONS ---------------------", options);
               throw ShadowboxExceptions.API_REQUEST_FAILED;
               // throw new errors.ServerApiError(
               //   `API request to ${path} failed with status ${response.status}`,
@@ -279,7 +284,7 @@ export class ShadowboxServer implements IServer {
     let isFulfilled = false;
     // Try 3 times and see if the server is reachable or not.
     for (let i = 0; i < 3; i++) {
-      isFulfilled = await new Promise((resolve, reject) => {
+      isFulfilled = await new Promise((resolve) => {
         setTimeout(() => {
           this.getServerConfig().then(
             (serverConfig) => {

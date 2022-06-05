@@ -1,14 +1,19 @@
 import {QueryTypes} from "sequelize";
 
 import * as entityInterfaces from '../IManualServerEntity';
-import {ServerConfigJson} from "../../../app/interfaces/IServer";
-import {ManualServerConfig} from "../../../app/interfaces/ManualServer/IManualServer";
+import ServerConfigJSON from "../../../app/interfaces/Server/ServerConfigJSON";
+import IManualServerConfig from "../../../app/interfaces/ManualServer/IManualServerConfig";
+import IBandwidthThreshold from "../../../app/interfaces/ManualServer/IBandwidthThreshold";
 
 export default function getQueries(database, tableName) {
-  async function insertManualServer(serverConfig: ServerConfigJson, managementServerConfig: ManualServerConfig) {
+  async function insertManualServer(
+    serverConfig: ServerConfigJSON,
+    managementServerConfig: IManualServerConfig,
+    bandwidthThreshold: IBandwidthThreshold
+  ) {
     const sqlInsertQuery = `
-      INSERT INTO ${tableName} (manualServerId, name, shadowboxVersion, defaultDataLimit, metricsEnabled, hostnameForAccessKeys, managementApiUrl, certSha256, portForNewAccessKeys, createdAt)
-      VALUES (:manualServerId, :name, :shadowboxVersion, :defaultDataLimit, :metricsEnabled, :hostnameForAccessKeys, :managementApiUrl, :certSha256, :portForNewAccessKeys, :createdAt)
+      INSERT INTO ${tableName} (manualServerId, name, shadowboxVersion, defaultDataLimit, bandwidthThreshold, metricsEnabled, hostnameForAccessKeys, managementApiUrl, certSha256, portForNewAccessKeys, createdAt)
+      VALUES (:manualServerId, :name, :shadowboxVersion, :defaultDataLimit, :bandwidthThreshold, :metricsEnabled, :hostnameForAccessKeys, :managementApiUrl, :certSha256, :portForNewAccessKeys, :createdAt)
       `;
     return database.query(
       sqlInsertQuery,
@@ -18,6 +23,7 @@ export default function getQueries(database, tableName) {
           name: serverConfig.name,
           shadowboxVersion: serverConfig.version,
           defaultDataLimit: serverConfig.accessKeyDataLimit?.bytes ?? 0,
+          bandwidthThreshold: bandwidthThreshold?.megaBytes ?? 0,
           metricsEnabled: serverConfig.metricsEnabled ? 1 : 0,
           hostnameForAccessKeys: serverConfig.hostnameForAccessKeys,
           managementApiUrl: managementServerConfig.apiUrl,
@@ -41,13 +47,19 @@ export default function getQueries(database, tableName) {
     return (result && result.length > 0) ? result[0] as entityInterfaces.IManualServerEntity : null;
   }
   
-  async function updateManualServerByRowId(rowId: number, serverConfig: ServerConfigJson, managementServerConfig: ManualServerConfig): Promise<any> {
+  async function updateManualServerByRowId(
+    rowId: number,
+    serverConfig: ServerConfigJSON,
+    managementServerConfig: IManualServerConfig,
+    bandwidthThreshold: IBandwidthThreshold
+  ): Promise<any> {
     const sqlUpdateQuery = `
       UPDATE ${tableName} SET
       
       name = :name,
       shadowboxVersion = :shadowboxVersion,
       defaultDataLimit = :defaultDataLimit,
+      bandwidthThreshold = :bandwidthThreshold,
       metricsEnabled = :metricsEnabled,
       hostnameForAccessKeys = :hostnameForAccessKeys,
       managementApiUrl = :managementApiUrl,
@@ -65,6 +77,7 @@ export default function getQueries(database, tableName) {
           name: serverConfig.name,
           shadowboxVersion: serverConfig.version,
           defaultDataLimit: serverConfig.accessKeyDataLimit?.bytes ?? 0,
+          bandwidthThreshold: bandwidthThreshold?.megaBytes ?? 0,
           metricsEnabled: serverConfig.metricsEnabled ? 1 : 0,
           hostnameForAccessKeys: serverConfig.hostnameForAccessKeys,
           managementApiUrl: managementServerConfig.apiUrl,

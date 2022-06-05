@@ -10,7 +10,7 @@ const AccessKeyChiefService = {
     const listOfAccessKeysInShadowbox = await server.listAccessKeys();
     
     for (let accessKeyInShadowbox of listOfAccessKeysInShadowbox) {
-      const foundAccessKeyInDatabase = await database.accessKeyEntity.findByKeyIdAndServerRowId(accessKeyInShadowbox.id, server.rowId);
+      const foundAccessKeyInDatabase = await database.accessKeyEntity.findByKeyIdAndServerRowId(accessKeyInShadowbox.id, server.rowId ?? 0);
       
       if (!foundAccessKeyInDatabase) {
         console.log(`An Access Key was not synced. Start syncing...`);
